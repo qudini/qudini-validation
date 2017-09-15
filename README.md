@@ -1,4 +1,4 @@
-# com.qudini.validation
+# Qudini Validation
 
 Validate inputs using a compact API.
 
