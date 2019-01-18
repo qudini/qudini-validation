@@ -1,5 +1,7 @@
 # Qudini Validation
 
+[![CircleCI](https://circleci.com/gh/qudini/qudini-validation.svg?style=svg)](https://circleci.com/gh/qudini/qudini-validation)
+
 Validate inputs using a compact API.
 
 ```java
