@@ -48,3 +48,16 @@ jobs:
       - run: mvn build-helper:parse-version versions:set -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.${CIRCLE_BUILD_NUM} versions:commit
       - run: mvn package
       - run: mvn deploy -s .circleci/m2settings.xml
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build: {}
+
+      - master:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
