@@ -16,7 +16,7 @@
         <repository>
             <id>bintray-qudini-qudini-maven</id>
             <name>qudini-qudini-maven</name>
-            <url>https://api.bintray.com/maven/qudini/qudini-maven/qudini-validation/;publish=1</url>
+            <url>https://api.bintray.com/maven/qudini/qudini-maven/qudini-maven/;publish=1</url>
         </repository>
     </distributionManagement>
     <scm>
