@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.qudini</groupId>
     <artifactId>qudini-validation</artifactId>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <version>1.0.0</version>
     <name>qudini-validation</name>
     <url>https://github.com/qudini/qudini-validation</url>
@@ -12,6 +12,17 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
+    <distributionManagement>
+        <repository>
+            <id>bintray-qudini-qudini-maven</id>
+            <name>qudini-qudini-maven</name>
+            <url>https://api.bintray.com/maven/qudini/qudini-maven/qudini-validation/;publish=1</url>
+        </repository>
+    </distributionManagement>
+    <scm>
+        <developerConnection>scm:git:git@github.com:qudini/qudini-validation.git</developerConnection>
+        <connection>scm:git:git@github.com:qudini/qudini-validation.git</connection>
+    </scm>
     <build>
         <plugins>
             <plugin>
