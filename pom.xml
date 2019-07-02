@@ -3,7 +3,6 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.qudini</groupId>
     <artifactId>qudini-validation</artifactId>
-    <packaging>pom</packaging>
     <version>1.1-SNAPSHOT</version>
     <name>qudini-validation</name>
     <url>https://github.com/qudini/qudini-validation</url>
