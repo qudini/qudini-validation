@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 @ParametersAreNonnullByDefault
 public final class Validator<A> {
     private final boolean wasInvalidated;
+    private final boolean wasShortCircuited;
     private final ImmutableList<InvalidValue<?>> invalidValues;
     private final Function<Stream<InvalidValue<?>>, A> invalidResultCreator;
 
@@ -30,15 +31,17 @@ public final class Validator<A> {
      * Creates a new validator that specifies how to create invalid results from an error string.
      */
     public Validator(Function<Stream<InvalidValue<?>>, A> invalidResultCreator) {
-        this(false, ImmutableList.of(), invalidResultCreator);
+        this(false, false, ImmutableList.of(), invalidResultCreator);
     }
 
     private Validator(
             final boolean wasInvalidated,
+            final boolean wasShortCircuited,
             final ImmutableList<InvalidValue<?>> invalidValues,
             final Function<Stream<InvalidValue<?>>, A> invalidResultCreator
     ) {
         this.wasInvalidated = wasInvalidated;
+        this.wasShortCircuited = wasShortCircuited;
         this.invalidValues = invalidValues;
         this.invalidResultCreator = invalidResultCreator;
     }
@@ -81,20 +84,22 @@ public final class Validator<A> {
             @Nullable final B x,
             final Function<B, B> applyFailingValue
     ) {
-        final boolean valid = describedPredicate.getPredicate().test(x);
+        return check(describedPredicate, Function.identity(), x, applyFailingValue);
+    }
 
-        final ImmutableList<InvalidValue<?>> newInvalidValues = valid
-                ? invalidValues
-                : ListUtilities.cons(
-                        new InvalidValue<>(describedPredicate.describe(), x),
-                        invalidValues
-                );
-
-        return new Validator<>(
-                (wasInvalidated || !valid),
-                newInvalidValues,
-                invalidResultCreator
-        );
+    /**
+     * Validate with a described predicate.
+     *
+     * @see DescribedPredicate
+     */
+    @CheckReturnValue
+    @Nonnull
+    public <B, F> Validator<A> check(
+            final DescribedPredicate<F> describedPredicate,
+            final Function<B, F> fieldMapper,
+            @Nullable final B x
+    ) {
+        return check(describedPredicate, fieldMapper, x, Function.identity());
     }
 
     /**
@@ -176,11 +181,21 @@ public final class Validator<A> {
     @CheckReturnValue
     @Nonnull
     public Validator<A> check(final Validator<?> validator) {
-        return new Validator<>(
-                wasInvalidated || validator.wasInvalidated,
-                ListUtilities.concat(invalidValues, validator.invalidValues),
-                invalidResultCreator
-        );
+        final Validator<A> returnValidator;
+
+        if (wasShortCircuited) {
+            returnValidator = this;
+
+        } else {
+            returnValidator = new Validator<>(
+                    wasInvalidated || validator.wasInvalidated,
+                    false,
+                    ListUtilities.concat(invalidValues, validator.invalidValues),
+                    invalidResultCreator
+            );
+        }
+
+        return returnValidator;
     }
 
     /**
@@ -230,6 +245,47 @@ public final class Validator<A> {
     public void finish() {
         then(() -> {
         });
+    }
+
+
+    /**
+     * Validate with a described predicate.
+     *
+     * @see DescribedPredicate
+     */
+    @CheckReturnValue
+    @Nonnull
+    private <B, F> Validator<A> check(
+            final DescribedPredicate<F> describedPredicate,
+            final Function<B, F> fieldMapper,
+            @Nullable final B x,
+            final Function<B, B> applyFailingValue
+    ) {
+        final Validator<A> returnValidator;
+
+        if (wasShortCircuited) {
+            returnValidator = this;
+
+        } else {
+            final F fieldValue = fieldMapper.apply(x);
+            final boolean valid = describedPredicate.getPredicate().test(fieldValue);
+
+            final ImmutableList<InvalidValue<?>> newInvalidValues = valid
+                    ? invalidValues
+                    : ListUtilities.cons(
+                    new InvalidValue<>(describedPredicate.describe(), fieldValue),
+                    invalidValues
+            );
+
+            returnValidator = new Validator<>(
+                    (wasInvalidated || !valid),
+                    (!valid && describedPredicate.shouldShortCircuit()),
+                    newInvalidValues,
+                    invalidResultCreator
+            );
+        }
+
+        return returnValidator;
     }
 
     /**
@@ -400,7 +456,7 @@ public final class Validator<A> {
          */
         @Nonnull
         public <C> DescribedPredicate<C> map(Function<C, B> f) {
-            return DescribedPredicate.create(describe(), x -> test(f.apply(x)));
+            return new DescribedPredicate<>(describe(), x -> test(f.apply(x)), shouldShortCircuit());
         }
 
         /**
