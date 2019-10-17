@@ -79,32 +79,27 @@ public final class Validator<A> {
      */
     @CheckReturnValue
     @Nonnull
+    public <B> Validator<A> check(
+            final DescribedPredicate<B> describedPredicate,
+            @Nullable final B x,
+            final Function<B, B> applyFailingValue
+    ) {
+        return check(describedPredicate, Function.identity(), x, applyFailingValue);
+    }
+
+    /**
+     * Validate with a described predicate.
+     *
+     * @see DescribedPredicate
+     */
+    @CheckReturnValue
+    @Nonnull
     public <B, F> Validator<A> check(
             final DescribedPredicate<F> describedPredicate,
-            @Nullable final B x,
-            final Function<B, F> fieldMapper
+            final Function<B, F> fieldMapper,
+            @Nullable final B x
     ) {
-        if (wasShortCircuited) {
-            return this;
-
-        } else {
-            final F fieldValue = fieldMapper.apply(x);
-            final boolean valid = describedPredicate.getPredicate().test(fieldValue);
-
-            final ImmutableList<InvalidValue<?>> newInvalidValues = valid
-                    ? invalidValues
-                    : ListUtilities.cons(
-                    new InvalidValue<>(describedPredicate.describe(), fieldValue),
-                    invalidValues
-            );
-
-            return new Validator<>(
-                    (wasInvalidated || !valid),
-                    (!valid && describedPredicate.shouldShortCircuit()),
-                    newInvalidValues,
-                    invalidResultCreator
-            );
-        }
+        return check(describedPredicate, fieldMapper, x, Function.identity());
     }
 
     /**
@@ -131,6 +126,22 @@ public final class Validator<A> {
             @Nullable final B x
     ) {
         return check(DescribedPredicate.create(failureMessage, pattern), x);
+    }
+
+    /**
+     * Validate a CharSequence with a regular expression.
+     *
+     * @see DescribedPredicate
+     */
+    @CheckReturnValue
+    @Nonnull
+    public <B extends CharSequence> Validator<A> check(
+            final String failureMessage,
+            final Pattern pattern,
+            @Nullable final B x,
+            Function<B, B> applyFailingValue
+    ) {
+        return check(DescribedPredicate.create(failureMessage, pattern), x, applyFailingValue);
     }
 
     /**
@@ -230,6 +241,43 @@ public final class Validator<A> {
     public void finish() {
         then(() -> {
         });
+    }
+
+
+    /**
+     * Validate with a described predicate.
+     *
+     * @see DescribedPredicate
+     */
+    @CheckReturnValue
+    @Nonnull
+    private <B, F> Validator<A> check(
+            final DescribedPredicate<F> describedPredicate,
+            final Function<B, F> fieldMapper,
+            @Nullable final B x,
+            final Function<B, B> applyFailingValue
+    ) {
+        if (wasShortCircuited) {
+            return this;
+
+        } else {
+            final F fieldValue = fieldMapper.apply(x);
+            final boolean valid = describedPredicate.getPredicate().test(fieldValue);
+
+            final ImmutableList<InvalidValue<?>> newInvalidValues = valid
+                    ? invalidValues
+                    : ListUtilities.cons(
+                    new InvalidValue<>(describedPredicate.describe(), fieldValue),
+                    invalidValues
+            );
+
+            return new Validator<>(
+                    (wasInvalidated || !valid),
+                    (!valid && describedPredicate.shouldShortCircuit()),
+                    newInvalidValues,
+                    invalidResultCreator
+            );
+        }
     }
 
     /**
