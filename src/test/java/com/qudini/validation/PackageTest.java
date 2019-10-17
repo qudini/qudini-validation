@@ -6,7 +6,10 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class PackageTest {
 
@@ -91,6 +94,65 @@ public class PackageTest {
     public void testReturning() {
         assertTrue(Validators.bool().check(testSuccessfulValidator).then(true));
         assertFalse(Validators.bool().check(testFailingValidator).then(true));
+    }
+
+    @Test
+    public void testShortCircuiting() {
+        final Validator.DescribedPredicate<Boolean> willShortCircuitIfFalse = Validator.DescribedPredicate.shortCircuit(
+                "Short Circuit",
+                bool -> bool
+        );
+
+        final Validator<Void> testShortCircuitingValidator = Validator
+                .nested()
+                .check(Validate.nonBlankCharSequence(), "")
+                .check(Validators.nonNull(), null)
+
+                // This will short circuit and the validations after this one will be ignored
+                .check(willShortCircuitIfFalse, false)
+
+                .check(Validate.constantCased(), "not_CONSTANT_CASED_STRING")
+                .check(Validate.isTrue, false);
+
+        try {
+            Validators.throwing().check(testShortCircuitingValidator).finish();
+            fail("Validation should not have been successful.");
+
+        } catch (final Validators.Exception exception) {
+            assertEquals(exception.collectInvalidValues().size(), 3);
+        }
+    }
+
+    @Test
+    public void testNestedShortCircuiting() {
+        final Validator.DescribedPredicate<Boolean> willShortCircuitIfFalse = Validator.DescribedPredicate.shortCircuit(
+                "Short Circuit",
+                bool -> bool
+        );
+
+        final Validator<Void> testShortCircuitingValidator = Validator
+                .nested()
+                .check(Validate.nonBlankCharSequence(), "")
+                .check(Validators.nonNull(), null)
+
+                .check(Validator.nested()
+                        .check(Validate.nonBlankCharSequence(), "")
+                        // This will short circuit and the validations after this one will be ignored
+                        .check(willShortCircuitIfFalse, false)
+                        .check(Validators.nonNull(), null)
+                )
+
+                // The checks in the parent validator are not affected
+                .check(Validate.constantCased(), "not_CONSTANT_CASED_STRING")
+                .check(Validate.isTrue, false);
+
+        try {
+            Validators.throwing().check(testShortCircuitingValidator).finish();
+            fail("Validation should not have been successful.");
+
+        } catch (final Validators.Exception exception) {
+            assertEquals(exception.collectInvalidValues().size(), 6);
+        }
     }
 
     private static class Account {

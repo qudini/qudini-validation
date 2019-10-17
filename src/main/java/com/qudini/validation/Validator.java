@@ -181,17 +181,21 @@ public final class Validator<A> {
     @CheckReturnValue
     @Nonnull
     public Validator<A> check(final Validator<?> validator) {
+        final Validator<A> returnValidator;
+
         if (wasShortCircuited) {
-            return this;
+            returnValidator = this;
 
         } else {
-            return new Validator<>(
+            returnValidator = new Validator<>(
                     wasInvalidated || validator.wasInvalidated,
                     false,
                     ListUtilities.concat(invalidValues, validator.invalidValues),
                     invalidResultCreator
             );
         }
+
+        return returnValidator;
     }
 
     /**
@@ -257,8 +261,10 @@ public final class Validator<A> {
             @Nullable final B x,
             final Function<B, B> applyFailingValue
     ) {
+        final Validator<A> returnValidator;
+
         if (wasShortCircuited) {
-            return this;
+            returnValidator = this;
 
         } else {
             final F fieldValue = fieldMapper.apply(x);
@@ -271,13 +277,15 @@ public final class Validator<A> {
                     invalidValues
             );
 
-            return new Validator<>(
+            returnValidator = new Validator<>(
                     (wasInvalidated || !valid),
                     (!valid && describedPredicate.shouldShortCircuit()),
                     newInvalidValues,
                     invalidResultCreator
             );
         }
+
+        return returnValidator;
     }
 
     /**
