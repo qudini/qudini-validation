@@ -17,14 +17,14 @@ jobs:
             - v1-dependencies-{{ checksum "pom.xml" }}
             - v1-dependencies-
 
-      - run: mvn dependency:go-offline
+      - run: mvn  -s .circleci/m2settings.xml dependency:go-offline
 
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
-      - run: mvn integration-test
+      - run: mvn  -s .circleci/m2settings.xml integration-test
 
   master:
     docker:
@@ -38,24 +38,30 @@ jobs:
             - v1-dependencies-{{ checksum "pom.xml" }}
             - v1-dependencies-
 
-      - run: mvn dependency:go-offline
+      - run: mvn  -s .circleci/m2settings.xml dependency:go-offline
 
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
-      - run: mvn build-helper:parse-version versions:set -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.${CIRCLE_BUILD_NUM} versions:commit
-      - run: mvn package
-      - run: mvn deploy -s .circleci/m2settings.xml
+      - run: mvn  -s .circleci/m2settings.xml build-helper:parse-version versions:set -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.${CIRCLE_BUILD_NUM} versions:commit
+      - run: mvn  -s .circleci/m2settings.xml package
+      - run: mvn  -s .circleci/m2settings.xml deploy
+
 
 workflows:
   version: 2
   build:
     jobs:
-      - build: {}
+      - build:
+          context:
+            - artifactory
+
 
       - master:
+          context:
+            - artifactory
           requires:
             - build
           filters:
