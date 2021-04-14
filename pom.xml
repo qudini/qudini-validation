@@ -12,11 +12,14 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
     <distributionManagement>
-        <repository>
-            <id>bintray-qudini-qudini-maven</id>
-            <name>qudini-qudini-maven</name>
-            <url>https://api.bintray.com/maven/qudini/qudini-maven/qudini-validation/;publish=1</url>
-        </repository>
+      <repository>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+        <id>central</id>
+        <name>Qudini-releases</name>
+        <url>https://qudini.jfrog.io/artifactory/qudini-maven-local</url>
+      </repository>
     </distributionManagement>
     <scm>
         <developerConnection>scm:git:git@github.com:qudini/qudini-validation.git</developerConnection>
